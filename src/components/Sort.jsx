@@ -7,7 +7,6 @@ function Sort({ value, onClickCategory }) {
     { name: 'цене', sort: 'price' },
     { name: 'алфавиту', sort: 'title' },
   ];
-
   const onClickListItem = (i) => {
     onClickCategory(i);
     setIsVisiblePopup(false);
