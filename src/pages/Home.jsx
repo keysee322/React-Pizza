@@ -47,7 +47,6 @@ const Home = () => {
         setIsLoading(false);
       });
     window.scrollTo(0, 0);
-    console.log(categoryId, sortType.sort);
   }, [categoryId, sortType, currentPage]);
 
   return (
