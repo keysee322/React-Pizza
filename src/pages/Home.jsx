@@ -1,17 +1,23 @@
 import React from 'react';
 import axios from 'axios';
+import qs from 'qs';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
-import { setCategoryId, setPageNum } from '../redux/slices/filterSlice';
+import { setCategoryId, setPageNum, setFilters } from '../redux/slices/filterSlice';
 import Categories from '../components/Categories';
-import Sort from '../components/Sort';
+import Sort, { list } from '../components/Sort';
 import PizzaBlock from '../components/PizzaBlock/PizzaBlock';
 import Skeleton from '../components/PizzaBlock/Skeleton';
 import Pagination from '../components/Pagination';
 import { SearchContext } from '../App';
 
 const Home = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
+  const isSearch = React.useRef(false);
+  const isMounted = React.useRef(false);
+
   const categoryId = useSelector((state) => state.filter.categoryId);
   const sortType = useSelector((state) => state.filter.sort.sort);
   const pageNumber = useSelector((state) => state.filter.pageNum);
@@ -31,9 +37,10 @@ const Home = () => {
       }
       return false;
     })
-    .map((obj) => (
+    .map((obj, i) => (
       <PizzaBlock
         key={obj.id}
+        id={obj.id}
         title={obj.title}
         price={obj.price}
         image={obj.imageUrl}
@@ -43,7 +50,7 @@ const Home = () => {
     ));
   const skeletons = [...new Array(6)].map((_, index) => <Skeleton key={index} />);
 
-  React.useEffect(() => {
+  const fetchPizzas = () => {
     setIsLoading(true);
 
     axios
@@ -57,6 +64,44 @@ const Home = () => {
         setIsLoading(false);
       });
     window.scrollTo(0, 0);
+  };
+
+  // Если изменили параметры и был первый рендер
+  React.useEffect(() => {
+    if (isMounted.current) {
+      const queryString = qs.stringify({
+        sortProperty: sortType,
+        categoryId,
+        pageNum: pageNumber,
+      });
+
+      navigate(`?${queryString}`);
+    }
+    isMounted.current = true;
+  }, [categoryId, sortType, pageNumber]);
+
+  // Ели был первый рендер, то проверяем URL-параметры и сохраняем в редуксе
+  React.useEffect(() => {
+    if (window.location.search) {
+      const params = qs.parse(window.location.search.substring(1));
+      const sort = list.find((obj) => obj.sort === params.sortProperty);
+      dispatch(
+        setFilters({
+          ...params,
+          sort,
+        }),
+      );
+      isSearch.current = true;
+    }
+  }, []);
+
+  // Если был первый рендер, то запрашиваем пиццыф
+  React.useEffect(() => {
+    if (!isSearch.current) {
+      fetchPizzas();
+    }
+
+    isSearch.current = false;
   }, [categoryId, sortType, pageNumber]);
 
   return (
